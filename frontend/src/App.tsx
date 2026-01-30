@@ -15,6 +15,7 @@ import { NewWorkspaceDialog } from './components/NewWorkspaceDialog';
 import { WorkspaceGrid } from './components/WorkspaceGrid';
 import { SessionTile } from './components/SessionTile';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
+import { HostManagement } from './components/HostManagement';
 
 function ConnectionStatus({ status }: { status: string }) {
   const statusConfig = {
@@ -74,6 +75,7 @@ function SessionManagerApp() {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = useState<Set<string>>(new Set());
   const [expandedPreviews, setExpandedPreviews] = useState<Set<string>>(new Set());
+  const [showHostManagement, setShowHostManagement] = useState(false);
 
   // Drag and drop state
   const {
@@ -363,6 +365,7 @@ function SessionManagerApp() {
           <h1 className="text-xl font-bold">Project Manager</h1>
           <SessionControls
             onNewWorkspace={() => setShowNewWorkspaceDialog(true)}
+            onManageHosts={() => setShowHostManagement(true)}
             onRefresh={handleRefresh}
           />
           <span className="text-sm text-gray-400">
@@ -470,6 +473,11 @@ function SessionManagerApp() {
         onInput={handleInput}
         onResize={handleResize}
         onReady={handleTerminalReady}
+      />
+
+      <HostManagement
+        isOpen={showHostManagement}
+        onClose={() => setShowHostManagement(false)}
       />
     </div>
   );

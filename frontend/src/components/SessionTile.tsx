@@ -85,7 +85,7 @@ export function SessionTile({
       onClick={() => onSelect(session)}
     >
       <div className="flex items-center justify-between px-3 py-2 bg-gray-800 border-b border-gray-700">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           {onTogglePreviewCollapse && (
             <button
               onClick={handleTogglePreview}
@@ -114,20 +114,22 @@ export function SessionTile({
             session.status === 'disconnected' ? 'bg-red-500' :
             'bg-gray-500'
           }`} />
-          <span className="font-medium truncate">{session.name}</span>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="font-medium truncate" title={session.name}>{session.name}</span>
+            <span className="text-xs text-gray-400">{session.host.displayName}</span>
+          </div>
           {session.isClaudeSession && (
-            <span className="px-1.5 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">
+            <span className="px-1.5 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded flex-shrink-0">
               Claude
             </span>
           )}
           {session.status === 'terminated' && (
-            <span className="px-1.5 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded">
+            <span className="px-1.5 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded flex-shrink-0">
               Ended
             </span>
           )}
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400 flex-shrink-0">
-          <span>{session.host.displayName}</span>
           {onViewTerminal && session.status !== 'terminated' && (
             <button
               onClick={handleViewTerminal}

@@ -96,8 +96,8 @@ export class SSHConnectionManager {
       config.passphrase = passphrase;
     }
 
-    // Use ssh-agent if enabled (only if no password/key auth)
-    if (hostConfig.useAgent !== false && !password && !hostConfig.privateKeyPath) {
+    // Use ssh-agent if explicitly enabled
+    if (hostConfig.useAgent === true) {
       config.agent = process.env.SSH_AUTH_SOCK;
     }
 
@@ -277,6 +277,78 @@ export class SSHConnectionManager {
 
   getAllConfiguredHosts(): SSHHostConfig[] {
     return getAllHosts();
+  }
+
+  /**
+   * Test connection directly with a host config (without saving to disk)
+   */
+  async testConnectionDirect(config: SSHHostConfig): Promise<{ success: boolean; error?: string; message?: string }> {
+    const client = new Client();
+
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        client.end();
+        resolve({
+          success: false,
+          error: 'Connection timeout after 10 seconds',
+        });
+      }, 10000);
+
+      client.on('ready', () => {
+        clearTimeout(timeout);
+        client.end();
+        resolve({
+          success: true,
+          message: 'Connection successful',
+        });
+      });
+
+      client.on('error', (err) => {
+        clearTimeout(timeout);
+        client.end();
+        resolve({
+          success: false,
+          error: err.message,
+        });
+      });
+
+      try {
+        const connectConfig = this.buildConnectConfig(config);
+
+        if (config.jumpHost) {
+          this.connectViaJumpHost(
+            client,
+            config,
+            connectConfig,
+            () => {
+              clearTimeout(timeout);
+              client.end();
+              resolve({
+                success: true,
+                message: 'Connection successful via jump host',
+              });
+            },
+            (err) => {
+              clearTimeout(timeout);
+              client.end();
+              resolve({
+                success: false,
+                error: err.message,
+              });
+            }
+          );
+        } else {
+          client.connect(connectConfig);
+        }
+      } catch (err) {
+        clearTimeout(timeout);
+        client.end();
+        resolve({
+          success: false,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    });
   }
 }
 
