@@ -9,13 +9,17 @@ import * as os from 'os';
 export class SessionDiscoveryService {
   private sessions: Map<string, Session> = new Map();
   private sessionWorkspaceMap: Map<string, string | null> = new Map(); // sessionId -> workspaceId
+  private hiddenSessions: Set<string> = new Set(); // sessionIds that are hidden from workspace
   private readonly sessionWorkspacesPath: string;
+  private readonly hiddenSessionsPath: string;
   private pollInterval: NodeJS.Timeout | null = null;
   private listeners: Set<(sessions: Session[]) => void> = new Set();
 
   constructor() {
     this.sessionWorkspacesPath = path.join(os.homedir(), '.session-manager', 'session-workspaces.json');
+    this.hiddenSessionsPath = path.join(os.homedir(), '.session-manager', 'hidden-sessions.json');
     this.loadSessionWorkspaces();
+    this.loadHiddenSessions();
   }
 
   private loadSessionWorkspaces(): void {
@@ -43,6 +47,34 @@ export class SessionDiscoveryService {
       fs.renameSync(tempPath, this.sessionWorkspacesPath);
     } catch (err) {
       console.error('Failed to save session workspaces:', err);
+    }
+  }
+
+  private loadHiddenSessions(): void {
+    try {
+      if (fs.existsSync(this.hiddenSessionsPath)) {
+        const data = fs.readFileSync(this.hiddenSessionsPath, 'utf-8');
+        const parsed = JSON.parse(data);
+        this.hiddenSessions = new Set(parsed);
+      }
+    } catch (err) {
+      console.error('Failed to load hidden sessions:', err);
+      this.hiddenSessions = new Set();
+    }
+  }
+
+  private saveHiddenSessions(): void {
+    try {
+      const dir = path.dirname(this.hiddenSessionsPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const data = Array.from(this.hiddenSessions);
+      const tempPath = `${this.hiddenSessionsPath}.tmp`;
+      fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf-8');
+      fs.renameSync(tempPath, this.hiddenSessionsPath);
+    } catch (err) {
+      console.error('Failed to save hidden sessions:', err);
     }
   }
 
@@ -320,12 +352,20 @@ export class SessionDiscoveryService {
     return () => this.listeners.delete(listener);
   }
 
-  getSessions(): Session[] {
-    return Array.from(this.sessions.values());
+  getSessions(includeHidden: boolean = false): Session[] {
+    const allSessions = Array.from(this.sessions.values());
+    if (includeHidden) {
+      return allSessions;
+    }
+    return allSessions.filter(s => !this.hiddenSessions.has(s.id));
   }
 
-  getManagedSessions(): Session[] {
-    return Array.from(this.sessions.values()).filter(s => this.sessionWorkspaceMap.has(s.id));
+  getManagedSessions(includeHidden: boolean = false): Session[] {
+    const allManaged = Array.from(this.sessions.values()).filter(s => this.sessionWorkspaceMap.has(s.id));
+    if (includeHidden) {
+      return allManaged;
+    }
+    return allManaged.filter(s => !this.hiddenSessions.has(s.id));
   }
 
   addManagedSession(sessionId: string, workspaceId: string | null = null): void {
@@ -343,6 +383,22 @@ export class SessionDiscoveryService {
     this.sessionWorkspaceMap.delete(sessionId);
     this.saveSessionWorkspaces();
     this.notifyListeners();
+  }
+
+  hideSession(sessionId: string): void {
+    this.hiddenSessions.add(sessionId);
+    this.saveHiddenSessions();
+    this.notifyListeners();
+  }
+
+  unhideSession(sessionId: string): void {
+    this.hiddenSessions.delete(sessionId);
+    this.saveHiddenSessions();
+    this.notifyListeners();
+  }
+
+  isSessionHidden(sessionId: string): boolean {
+    return this.hiddenSessions.has(sessionId);
   }
 
   private notifyListeners(): void {

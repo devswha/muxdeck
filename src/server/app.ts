@@ -7,6 +7,7 @@ import { sessionRoutes } from '../api/sessions.js';
 import { authRoutes } from '../api/auth.js';
 import { hostRoutes } from '../api/hosts.js';
 import { workspaceRoutes } from '../api/workspaces.js';
+import { todoRoutes } from '../api/todos.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { getConfig } from '../config/index.js';
 
@@ -19,6 +20,7 @@ export async function createApp() {
     origin: [
       'http://localhost:5174',
       'http://127.0.0.1:5174',
+      'http://100.98.23.106:5175',
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -28,6 +30,19 @@ export async function createApp() {
   // Auth middleware (skips if auth disabled)
   app.addHook('preHandler', authMiddleware);
 
+  // Root endpoint
+  app.get('/', async () => ({
+    name: 'session-manager',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      sessions: '/api/sessions',
+      workspaces: '/api/workspaces',
+      hosts: '/api/hosts',
+      websocket: '/ws',
+    },
+  }));
+
   // Health check endpoint
   app.get('/health', async () => ({ status: 'ok' }));
 
@@ -36,6 +51,7 @@ export async function createApp() {
   await workspaceRoutes(app);
   await sessionRoutes(app);
   await hostRoutes(app);
+  await todoRoutes(app);
 
   // Global error handler
   app.setErrorHandler((error, request, reply) => {

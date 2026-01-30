@@ -1,5 +1,6 @@
 import { WorkspaceWithSessions } from '../types/Workspace';
 import { Session } from '../types/Session';
+import { TodoList } from './TodoList';
 
 interface WorkspaceGroupProps {
   workspace: WorkspaceWithSessions;
@@ -101,18 +102,25 @@ export function WorkspaceGroup({
         </div>
       </div>
       {!workspace.isCollapsed && (
-        <div
-          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 bg-gray-900 min-h-[100px] transition-colors ${
-            isDragOver ? 'bg-blue-900/20' : ''
-          }`}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-        >
-          {workspace.sessions.map((session) => (
-            <div key={session.id}>{renderSession(session)}</div>
-          ))}
-          {children}
-        </div>
+        <>
+          {!isUngrouped && (
+            <div className="p-4 bg-gray-900 border-b border-gray-700">
+              <TodoList workspaceId={workspace.id} />
+            </div>
+          )}
+          <div
+            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 bg-gray-900 min-h-[100px] transition-colors ${
+              isDragOver ? 'bg-blue-900/20' : ''
+            }`}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            {workspace.sessions.map((session) => (
+              <div key={session.id}>{renderSession(session)}</div>
+            ))}
+            {children}
+          </div>
+        </>
       )}
     </div>
   );

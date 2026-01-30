@@ -49,9 +49,10 @@ export async function updateWorkspace(id: string, request: UpdateWorkspaceReques
 }
 
 export async function deleteWorkspace(id: string): Promise<void> {
+  const token = localStorage.getItem('session-manager-token');
   const response = await fetch(`${API_BASE}/workspaces/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!response.ok) {
     // Only try to parse JSON if there's content

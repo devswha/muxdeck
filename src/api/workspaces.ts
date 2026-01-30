@@ -130,8 +130,7 @@ export async function workspaceRoutes(app: FastifyInstance) {
         return { error: 'Workspace not found' };
       }
 
-      reply.status(204);
-      return;
+      return { success: true, movedSessions: sessionIds.length };
     } catch (err) {
       reply.status(500);
       return {

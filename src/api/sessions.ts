@@ -157,4 +157,34 @@ export async function sessionRoutes(app: FastifyInstance) {
       return { error: 'Failed to reassign session workspace' };
     }
   });
+
+  // POST /api/sessions/:id/hide - Hide session from workspace without killing tmux
+  app.post<{ Params: { id: string } }>('/api/sessions/:id/hide', async (request, reply) => {
+    try {
+      const { id } = request.params;
+
+      // Validate session exists
+      const session = sessionDiscoveryService.getSession(id);
+      if (!session) {
+        reply.status(404);
+        return { error: 'Session not found' };
+      }
+
+      // Check if session is managed
+      if (!sessionDiscoveryService.isManagedSession(id)) {
+        reply.status(400);
+        return { error: 'Session is not managed' };
+      }
+
+      // Hide the session
+      sessionDiscoveryService.hideSession(id);
+
+      reply.status(204);
+      return;
+    } catch (error) {
+      console.error('Failed to hide session:', error);
+      reply.status(500);
+      return { error: 'Failed to hide session' };
+    }
+  });
 }
