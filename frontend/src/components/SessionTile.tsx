@@ -130,27 +130,32 @@ export function SessionTile({
             'bg-gray-500'
           }`} />
           <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-sm font-semibold text-white truncate" title={session.name}>{session.name}</span>
-            <span className="text-xs text-gray-400">{session.host.displayName}</span>
+            <span className="text-base font-semibold text-white truncate" title={session.name}>{session.name}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-400">{session.host.displayName}</span>
+              {session.isClaudeSession && (
+                <span className="px-1 py-0.5 text-[10px] bg-purple-500/20 text-purple-400 rounded">
+                  Claude
+                </span>
+              )}
+            </div>
           </div>
-          {session.isClaudeSession && (
-            <span className="px-1.5 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded flex-shrink-0">
-              Claude
-            </span>
-          )}
           {session.status === 'terminated' && (
             <span className="px-1.5 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded flex-shrink-0">
               Ended
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-400 flex-shrink-0">
+        <div className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
           {onViewTerminal && session.status !== 'terminated' && (
             <button
               onClick={handleViewTerminal}
-              className="px-2 py-1 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"
+              className="p-1 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"
+              title="View Terminal"
             >
-              View Terminal
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </button>
           )}
           {session.status !== 'terminated' && (
