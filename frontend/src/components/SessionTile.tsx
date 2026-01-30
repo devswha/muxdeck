@@ -130,7 +130,7 @@ export function SessionTile({
             'bg-gray-500'
           }`} />
           <div className="flex flex-col min-w-0 flex-1">
-            <span className="font-medium truncate" title={session.name}>{session.name}</span>
+            <span className="text-sm font-semibold text-white truncate" title={session.name}>{session.name}</span>
             <span className="text-xs text-gray-400">{session.host.displayName}</span>
           </div>
           {session.isClaudeSession && (
