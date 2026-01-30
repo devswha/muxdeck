@@ -104,8 +104,8 @@ export class SessionManager {
     // Refresh discovery to pick up the session
     await sessionDiscoveryService.refresh();
 
-    // Find the session in discovery
-    const sessions = sessionDiscoveryService.getSessions();
+    // Find the session in discovery (include hidden sessions)
+    const sessions = sessionDiscoveryService.getSessions(true);
     const attachedSession = sessions.find(s =>
       s.tmux.sessionName === sessionName && s.host.id === hostId
     );
@@ -113,6 +113,9 @@ export class SessionManager {
     if (!attachedSession) {
       throw new Error(`Session "${sessionName}" exists but could not be discovered`);
     }
+
+    // Unhide if previously hidden
+    sessionDiscoveryService.unhideSession(attachedSession.id);
 
     // Add to managed sessions
     sessionDiscoveryService.addManagedSession(attachedSession.id);
