@@ -1,0 +1,12 @@
+{
+  "hosts": [
+    {
+      "id": "test-server",
+      "name": "Test Server",
+      "hostname": "100.123.228.51",
+      "port": 22,
+      "username": "devswha",
+      "privateKeyPath": "~/.ssh/id_rsa"
+    }
+  ]
+}

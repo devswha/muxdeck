@@ -1,0 +1,115 @@
+/* Grid layout styles */
+.session-grid {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+/* Responsive breakpoints */
+@media (min-width: 768px) {
+  .session-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .session-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1536px) {
+  .session-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Session tile */
+.session-tile {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid rgb(55, 65, 81);
+  background: rgb(17, 24, 39);
+  min-height: 300px;
+}
+
+.session-tile.selected {
+  border-color: rgb(59, 130, 246);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.session-tile.maximized {
+  position: fixed;
+  inset: 1rem;
+  z-index: 40;
+  min-height: auto;
+}
+
+/* Terminal container */
+.terminal-container {
+  flex: 1;
+  min-height: 0;
+  background: #1e1e1e;
+}
+
+/* Focus mode overlay */
+.focus-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 30;
+}
+
+/* Smooth transitions */
+.session-tile,
+.session-header,
+.terminal-container {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Scrollbar styling for terminal */
+.terminal-container ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.terminal-container ::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.terminal-container ::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 4px;
+}
+
+.terminal-container ::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
+/* Drag and drop styles */
+.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.drop-target {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: rgb(59, 130, 246);
+  transition: all 0.2s ease-in-out;
+}
+
+.drop-target-highlight {
+  background-color: rgba(59, 130, 246, 0.2);
+  border: 2px dashed rgb(59, 130, 246);
+}
+
+/* Draggable cursor states */
+[draggable="true"] {
+  cursor: grab;
+}
+
+[draggable="true"]:active {
+  cursor: grabbing;
+}

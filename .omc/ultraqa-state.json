@@ -1,0 +1,11 @@
+{
+  "active": false,
+  "goal_type": "interactive",
+  "goal_pattern": "Drag session from workspace to workspace using Playwright MCP",
+  "cycle": 2,
+  "max_cycles": 5,
+  "failures": ["Cycle 1: Frontend bug - sessionId not URL-encoded causing 400 Bad Request"],
+  "result": "PASSED - Drag and drop workspace to workspace works after URL encoding fix",
+  "completed_at": "2026-01-30T01:55:00Z",
+  "session_id": "ultraqa-drag-workspace"
+}

@@ -1,0 +1,29 @@
+{
+  "hosts": [
+    {
+      "id": "dev-server",
+      "name": "Development Server",
+      "hostname": "dev.example.com",
+      "port": 22,
+      "username": "developer",
+      "privateKeyPath": "~/.ssh/id_rsa",
+      "useAgent": true
+    },
+    {
+      "id": "prod-server",
+      "name": "Production Server (via bastion)",
+      "hostname": "prod.internal",
+      "port": 22,
+      "username": "admin",
+      "privateKeyPath": "~/.ssh/id_ed25519",
+      "passphraseEnvVar": "SSH_PROD_PASSPHRASE",
+      "useAgent": true,
+      "jumpHost": {
+        "hostname": "bastion.example.com",
+        "port": 22,
+        "username": "jump-user",
+        "privateKeyPath": "~/.ssh/bastion_key"
+      }
+    }
+  ]
+}

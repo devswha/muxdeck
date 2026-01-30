@@ -1,0 +1,18 @@
+{
+  "server": {
+    "port": 3000,
+    "host": "0.0.0.0"
+  },
+  "websocket": {
+    "path": "/ws",
+    "heartbeatInterval": 30000
+  },
+  "discovery": {
+    "pollInterval": 2000,
+    "includeNonClaude": false
+  },
+  "auth": {
+    "enabled": false,
+    "tokenExpiry": 86400
+  }
+}
