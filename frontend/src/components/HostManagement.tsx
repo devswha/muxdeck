@@ -9,7 +9,8 @@ interface SSHHost {
   hostname: string;
   port: number;
   username: string;
-  privateKeyPath: string;
+  privateKeyPath?: string;
+  password?: string;
   type: 'local' | 'ssh';
   connected?: boolean;
   useAgent?: boolean;
@@ -18,7 +19,8 @@ interface SSHHost {
     hostname: string;
     port: number;
     username: string;
-    privateKeyPath: string;
+    privateKeyPath?: string;
+    password?: string;
   };
 }
 

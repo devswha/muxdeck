@@ -6,7 +6,8 @@ export interface JumpHostConfig {
   hostname: string;
   port: number;
   username: string;
-  privateKeyPath: string;
+  privateKeyPath?: string;
+  password?: string;
   passphrase?: string;
   passphraseEnvVar?: string;
 }
@@ -47,7 +48,7 @@ export function loadHostsConfig(): HostsConfig {
           if (host.privateKeyPath) {
             host.privateKeyPath = resolvePath(host.privateKeyPath);
           }
-          if (host.jumpHost) {
+          if (host.jumpHost?.privateKeyPath) {
             host.jumpHost.privateKeyPath = resolvePath(host.jumpHost.privateKeyPath);
           }
         }

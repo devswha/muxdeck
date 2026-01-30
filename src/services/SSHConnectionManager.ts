@@ -138,7 +138,12 @@ export class SSHConnectionManager {
       agent: process.env.SSH_AUTH_SOCK,
     };
 
-    if (existsSync(jumpConfig.privateKeyPath)) {
+    // Add password authentication for jump host
+    if (jumpConfig.password) {
+      jumpConnectConfig.password = jumpConfig.password;
+    }
+
+    if (jumpConfig.privateKeyPath && existsSync(jumpConfig.privateKeyPath)) {
       jumpConnectConfig.privateKey = readFileSync(jumpConfig.privateKeyPath);
     }
 

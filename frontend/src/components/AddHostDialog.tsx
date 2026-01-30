@@ -13,6 +13,7 @@ interface HostFormData {
   port: number;
   username: string;
   privateKeyPath: string;
+  password: string;
   useAgent: boolean;
   passphraseEnvVar: string;
   useJumpHost: boolean;
@@ -20,7 +21,8 @@ interface HostFormData {
     hostname: string;
     port: number;
     username: string;
-    privateKeyPath: string;
+    privateKeyPath?: string;
+    password?: string;
   };
 }
 
@@ -32,6 +34,7 @@ export function AddHostDialog({ isOpen, onClose, onSuccess }: AddHostDialogProps
     port: 22,
     username: '',
     privateKeyPath: '~/.ssh/id_rsa',
+    password: '',
     useAgent: false,
     passphraseEnvVar: '',
     useJumpHost: false,
@@ -40,6 +43,7 @@ export function AddHostDialog({ isOpen, onClose, onSuccess }: AddHostDialogProps
       port: 22,
       username: '',
       privateKeyPath: '~/.ssh/id_rsa',
+      password: '',
     },
   });
   const [loading, setLoading] = useState(false);
@@ -61,8 +65,15 @@ export function AddHostDialog({ isOpen, onClose, onSuccess }: AddHostDialogProps
         hostname: formData.hostname,
         port: formData.port,
         username: formData.username,
-        privateKeyPath: formData.privateKeyPath,
       };
+
+      if (formData.privateKeyPath) {
+        payload.privateKeyPath = formData.privateKeyPath;
+      }
+
+      if (formData.password) {
+        payload.password = formData.password;
+      }
 
       if (formData.useAgent) {
         payload.useAgent = true;
@@ -104,8 +115,15 @@ export function AddHostDialog({ isOpen, onClose, onSuccess }: AddHostDialogProps
         hostname: formData.hostname,
         port: formData.port,
         username: formData.username,
-        privateKeyPath: formData.privateKeyPath,
       };
+
+      if (formData.privateKeyPath) {
+        payload.privateKeyPath = formData.privateKeyPath;
+      }
+
+      if (formData.password) {
+        payload.password = formData.password;
+      }
 
       if (formData.useAgent) {
         payload.useAgent = true;
@@ -149,6 +167,7 @@ export function AddHostDialog({ isOpen, onClose, onSuccess }: AddHostDialogProps
       port: 22,
       username: '',
       privateKeyPath: '~/.ssh/id_rsa',
+      password: '',
       useAgent: false,
       passphraseEnvVar: '',
       useJumpHost: false,
@@ -157,6 +176,7 @@ export function AddHostDialog({ isOpen, onClose, onSuccess }: AddHostDialogProps
         port: 22,
         username: '',
         privateKeyPath: '~/.ssh/id_rsa',
+        password: '',
       },
     });
     setError(null);
@@ -276,16 +296,30 @@ export function AddHostDialog({ isOpen, onClose, onSuccess }: AddHostDialogProps
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Private Key Path *
+                Password (optional)
+              </label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Leave empty for key-based auth"
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">Use password authentication instead of SSH keys</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Private Key Path (optional)
               </label>
               <input
                 type="text"
                 value={formData.privateKeyPath}
                 onChange={(e) => setFormData({ ...formData, privateKeyPath: e.target.value })}
                 placeholder="~/.ssh/id_rsa"
-                required
                 className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
               />
+              <p className="text-xs text-gray-500 mt-1">Leave empty if using password authentication</p>
             </div>
 
             <div>
@@ -380,7 +414,23 @@ export function AddHostDialog({ isOpen, onClose, onSuccess }: AddHostDialogProps
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Jump Host Private Key Path
+                      Jump Host Password (optional)
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.jumpHost.password}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        jumpHost: { ...formData.jumpHost, password: e.target.value }
+                      })}
+                      placeholder="Leave empty for key-based auth"
+                      className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Jump Host Private Key Path (optional)
                     </label>
                     <input
                       type="text"
