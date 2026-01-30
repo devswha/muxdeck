@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Session } from '../types/Session';
-import { ConfirmDialog } from './ConfirmDialog';
 import { hideSession } from '../services/SessionService';
 
 interface SessionTileProps {
@@ -32,7 +31,7 @@ export function SessionTile({
   onDragStart,
   isDragging = false
 }: SessionTileProps) {
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [showCloseOptions, setShowCloseOptions] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isHiding, setIsHiding] = useState(false);
 
@@ -48,35 +47,34 @@ export function SessionTile({
 
   const handleCloseClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowCloseConfirm(true);
+    setShowCloseOptions(true);
   };
 
-  const handleConfirmClose = async () => {
+  const handleHideSession = async () => {
+    setIsHiding(true);
+    try {
+      await hideSession(session.id);
+    } catch (error) {
+      console.error('Failed to hide session:', error);
+    } finally {
+      setIsHiding(false);
+      setShowCloseOptions(false);
+    }
+  };
+
+  const handleTerminateSession = async () => {
     setIsClosing(true);
     try {
       await onCloseSession?.(session.id);
     } finally {
       setIsClosing(false);
-      setShowCloseConfirm(false);
+      setShowCloseOptions(false);
     }
   };
 
   const handleTogglePreview = (e: React.MouseEvent) => {
     e.stopPropagation();
     onTogglePreviewCollapse?.(session.id);
-  };
-
-  const handleHideClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsHiding(true);
-    try {
-      await hideSession(session.id);
-      // The session will be hidden and the UI will refresh from the parent
-    } catch (error) {
-      console.error('Failed to hide session:', error);
-    } finally {
-      setIsHiding(false);
-    }
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -158,19 +156,7 @@ export function SessionTile({
               </svg>
             </button>
           )}
-          {session.status !== 'terminated' && (
-            <button
-              onClick={handleHideClick}
-              disabled={isHiding}
-              className="p-1 hover:bg-slate-700 hover:text-slate-300 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Hide from workspace"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-              </svg>
-            </button>
-          )}
-          {onCloseSession && session.status !== 'terminated' && (
+          {(onCloseSession || true) && session.status !== 'terminated' && (
             <button
               onClick={handleCloseClick}
               disabled={isClosing}
@@ -190,16 +176,41 @@ export function SessionTile({
         </div>
       )}
 
-      <ConfirmDialog
-        isOpen={showCloseConfirm}
-        title="Close Session"
-        message={`Are you sure you want to close session '${session.name}'? This will terminate the tmux session.`}
-        confirmText="Close Session"
-        cancelText="Cancel"
-        danger={true}
-        onConfirm={handleConfirmClose}
-        onCancel={() => setShowCloseConfirm(false)}
-      />
+      {showCloseOptions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowCloseOptions(false)} />
+          <div className="relative bg-gray-800 rounded-lg shadow-xl border border-gray-700 max-w-md w-full mx-4">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-2">Close Session</h2>
+              <p className="text-gray-400 text-sm mb-5">'{session.name}'</p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleHideSession}
+                  disabled={isHiding}
+                  className="w-full px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors text-left disabled:opacity-50"
+                >
+                  <div className="font-medium text-white">Hide from workspace</div>
+                  <div className="text-xs text-gray-400 mt-1">Session keeps running in background</div>
+                </button>
+                <button
+                  onClick={handleTerminateSession}
+                  disabled={isClosing}
+                  className="w-full px-4 py-3 rounded-lg bg-red-900/50 hover:bg-red-800/50 transition-colors text-left disabled:opacity-50"
+                >
+                  <div className="font-medium text-red-400">Terminate session</div>
+                  <div className="text-xs text-gray-400 mt-1">Kill tmux session permanently</div>
+                </button>
+                <button
+                  onClick={() => setShowCloseOptions(false)}
+                  className="w-full px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors text-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
