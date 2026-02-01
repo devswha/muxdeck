@@ -8,6 +8,7 @@ import { authRoutes } from '../api/auth.js';
 import { hostRoutes } from '../api/hosts.js';
 import { workspaceRoutes } from '../api/workspaces.js';
 import { todoRoutes } from '../api/todos.js';
+import { backlogRoutes } from '../api/backlog.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { getConfig } from '../config/index.js';
 
@@ -19,8 +20,12 @@ export async function createApp() {
   await app.register(cors, {
     origin: [
       'http://localhost:5174',
+      'http://localhost:5176',
       'http://127.0.0.1:5174',
+      'http://127.0.0.1:5176',
       'http://100.98.23.106:5175',
+      'http://100.98.23.106:5176',
+      'http://172.19.133.25:5176',
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -52,6 +57,7 @@ export async function createApp() {
   await sessionRoutes(app);
   await hostRoutes(app);
   await todoRoutes(app);
+  await backlogRoutes(app);
 
   // Global error handler
   app.setErrorHandler((error, request, reply) => {
@@ -77,8 +83,8 @@ export async function startServer(port: number = 3000) {
   // Initialize WebSocket server
   webSocketServer.initialize(httpServer);
 
-  // Note: Auto-polling disabled - sessions are manually added via createSession/attachSession
-  // sessionDiscoveryService.startPolling(config.discovery.pollInterval);
+  // Enable polling to refresh sessions with status bar and last output
+  sessionDiscoveryService.startPolling(config.discovery.pollInterval);
 
   return new Promise<void>((resolve, reject) => {
     httpServer.listen(port, config.server.host, () => {

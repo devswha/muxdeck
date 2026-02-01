@@ -65,6 +65,19 @@ export async function deleteWorkspace(id: string): Promise<void> {
   }
 }
 
+export async function renameWorkspace(id: string, name: string): Promise<Workspace> {
+  const response = await fetch(`${API_BASE}/workspaces/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ name }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to rename workspace');
+  }
+  return response.json();
+}
+
 export async function assignSessionToWorkspace(
   sessionId: string,
   workspaceId: string | null
@@ -79,4 +92,32 @@ export async function assignSessionToWorkspace(
     throw new Error(error.error || 'Failed to assign session to workspace');
   }
   return response.json();
+}
+
+export async function hideWorkspace(id: string): Promise<Workspace> {
+  const response = await fetch(`${API_BASE}/workspaces/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ hidden: true }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to hide workspace');
+  }
+  const data = await response.json();
+  return data.workspace;
+}
+
+export async function showWorkspace(id: string): Promise<Workspace> {
+  const response = await fetch(`${API_BASE}/workspaces/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ hidden: false }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to show workspace');
+  }
+  const data = await response.json();
+  return data.workspace;
 }

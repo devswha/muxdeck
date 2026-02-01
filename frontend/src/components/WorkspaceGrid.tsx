@@ -7,9 +7,15 @@ interface WorkspaceGridProps {
   onToggleCollapse: (workspaceId: string) => void;
   onAddSession: (workspaceId: string) => void;
   onDeleteWorkspace: (workspaceId: string) => void;
+  onRenameWorkspace?: (workspaceId: string, newName: string) => void;
+  onToggleHidden?: (workspaceId: string) => void;
   renderSession: (session: Session) => React.ReactNode;
   onSessionDrop?: (sessionId: string, workspaceId: string) => void;
   dragOverWorkspaceId?: string | null;
+  todoStats: Record<string, { pending: number; completed: number }>;
+  hosts: Array<{ id: string; name: string; type: string; hostname?: string }>;
+  showHiddenWorkspaces?: boolean;
+  onOpenTodo?: (workspaceId: string, workspaceName: string) => void;
 }
 
 export function WorkspaceGrid({
@@ -17,9 +23,15 @@ export function WorkspaceGrid({
   onToggleCollapse,
   onAddSession,
   onDeleteWorkspace,
+  onRenameWorkspace,
+  onToggleHidden,
   renderSession,
   onSessionDrop,
   dragOverWorkspaceId,
+  todoStats,
+  hosts,
+  showHiddenWorkspaces = false,
+  onOpenTodo,
 }: WorkspaceGridProps) {
   if (workspaces.length === 0) {
     return (
@@ -34,18 +46,28 @@ export function WorkspaceGrid({
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900 min-h-screen">
-      {workspaces.map(workspace => (
-        <WorkspaceGroup
-          key={workspace.id}
-          workspace={workspace}
-          onToggleCollapse={onToggleCollapse}
-          onAddSession={onAddSession}
-          onDeleteWorkspace={onDeleteWorkspace}
-          renderSession={renderSession}
-          onSessionDrop={onSessionDrop}
-          isDragOver={dragOverWorkspaceId === workspace.id}
-        />
-      ))}
+      {workspaces.map(workspace => {
+        const stats = todoStats[workspace.id] || { pending: 0, completed: 0 };
+        return (
+          <WorkspaceGroup
+            key={workspace.id}
+            workspace={workspace}
+            onToggleCollapse={onToggleCollapse}
+            onAddSession={onAddSession}
+            onDeleteWorkspace={onDeleteWorkspace}
+            onRenameWorkspace={onRenameWorkspace}
+            onToggleHidden={onToggleHidden}
+            renderSession={renderSession}
+            onSessionDrop={onSessionDrop}
+            isDragOver={dragOverWorkspaceId === workspace.id}
+            todoCount={stats.pending}
+            completedTodoCount={stats.completed}
+            hosts={hosts}
+            showHiddenWorkspaces={showHiddenWorkspaces}
+            onOpenTodo={onOpenTodo}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -4,6 +4,7 @@ export interface Workspace {
   id: string;
   name: string;
   description?: string;
+  hidden?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -22,4 +23,5 @@ export interface CreateWorkspaceRequest {
 export interface UpdateWorkspaceRequest {
   name?: string;
   description?: string;
+  hidden?: boolean;
 }

@@ -1,3 +1,10 @@
+export interface TodoItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+}
+
 export interface Todo {
   id: string;
   workspaceId: string;
@@ -14,4 +21,13 @@ export interface CreateTodoRequest {
 export interface UpdateTodoRequest {
   text?: string;
   completed?: boolean;
+}
+
+export interface WorkspaceTodos {
+  workspaceId: string;
+  items: TodoItem[];
+}
+
+export interface TodosData {
+  todos: WorkspaceTodos[];
 }

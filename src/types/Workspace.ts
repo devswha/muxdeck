@@ -2,6 +2,7 @@ export interface Workspace {
   id: string;           // UUID
   name: string;         // User-defined name
   description?: string; // Optional description
+  hidden?: boolean;     // Whether workspace is hidden
   createdAt: string;    // ISO timestamp
   updatedAt: string;    // ISO timestamp
 }
@@ -14,4 +15,5 @@ export interface CreateWorkspaceRequest {
 export interface UpdateWorkspaceRequest {
   name?: string;
   description?: string;
+  hidden?: boolean;
 }

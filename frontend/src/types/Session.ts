@@ -1,4 +1,10 @@
 export type SessionStatus = 'active' | 'idle' | 'disconnected' | 'terminated';
+export type ClaudeOperationStatus =
+  | 'thinking'
+  | 'waiting_for_input'
+  | 'idle'
+  | 'error'
+  | 'unknown';
 export type HostType = 'local' | 'remote';
 
 export interface SessionHost {
@@ -37,6 +43,16 @@ export interface Session {
   dimensions: Dimensions;
   workingDirectory: string | null;
   workspaceId: string | null;
+  /** Last line of terminal output for preview */
+  lastOutput?: string;
+  /** tmux status bar right side content */
+  statusBar?: string;
+  /** Claude conversation summary from project files */
+  conversationSummary?: string;
+  /** User's last input from terminal (for Claude sessions) */
+  userLastInput?: string;
+  /** Claude's current operation status */
+  claudeStatus?: ClaudeOperationStatus;
 }
 
 // Protocol types

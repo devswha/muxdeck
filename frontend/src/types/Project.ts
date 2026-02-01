@@ -64,7 +64,7 @@ export function groupSessionsByProject(sessions: Session[]): Project[] {
 
 /**
  * Groups sessions by their workspaceId into workspace groups.
- * Sessions with null workspaceId are grouped into an "Ungrouped" section.
+ * Sessions without a workspaceId are excluded from the grouped view.
  */
 export function groupSessionsByWorkspace(
   sessions: Session[],
@@ -83,34 +83,21 @@ export function groupSessionsByWorkspace(
     });
   }
 
-  // Create ungrouped workspace for sessions without workspaceId
-  const ungroupedId = '__ungrouped__';
-  workspaceMap.set(ungroupedId, {
-    id: ungroupedId,
-    name: 'Ungrouped',
-    createdAt: '',
-    updatedAt: '',
-    sessions: [],
-    isCollapsed: collapsedWorkspaceIds.has(ungroupedId),
-  });
-
-  // Assign sessions to workspaces
+  // Assign sessions to workspaces (excluding sessions without workspaceId)
   for (const session of sessions) {
-    const workspaceId = session.workspaceId || ungroupedId;
-    const workspace = workspaceMap.get(workspaceId);
-    if (workspace) {
-      workspace.sessions.push(session);
-    } else {
-      // Session references non-existent workspace, put in ungrouped
-      workspaceMap.get(ungroupedId)!.sessions.push(session);
+    if (session.workspaceId) {
+      const workspace = workspaceMap.get(session.workspaceId);
+      if (workspace) {
+        workspace.sessions.push(session);
+      }
+      // If session references non-existent workspace, it's simply excluded
     }
+    // Sessions without workspaceId are excluded from grouped view
   }
 
-  // Convert to array and sort (ungrouped last)
+  // Convert to array and sort alphabetically
   const result = Array.from(workspaceMap.values());
   result.sort((a, b) => {
-    if (a.id === ungroupedId) return 1;
-    if (b.id === ungroupedId) return -1;
     return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
   });
 

@@ -18,7 +18,14 @@ export const TerminalComponent = memo(function Terminal({
   const initializedRef = useRef(false);
 
   const handleData = useCallback((data: string) => {
-    onInput(sessionId, data);
+    // Filter out terminal device attribute responses that xterm.js auto-generates
+    // These cause feedback loops when sent back to tmux:
+    // - Primary DA response: ESC [ ? ... c (e.g., \x1b[?1;2c)
+    // - Secondary DA response: ESC [ > ... c (e.g., \x1b[>0;276;0c)
+    const filtered = data.replace(/\x1b\[\?[\d;]*c/g, '').replace(/\x1b\[>[\d;]*c/g, '');
+    if (filtered) {
+      onInput(sessionId, filtered);
+    }
   }, [sessionId, onInput]);
 
   const handleResize = useCallback((cols: number, rows: number) => {

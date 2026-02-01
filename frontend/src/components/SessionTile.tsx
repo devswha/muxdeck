@@ -136,7 +136,43 @@ export function SessionTile({
                   Claude
                 </span>
               )}
+              {session.isClaudeSession && session.claudeStatus && (
+                <span className={`px-1 py-0.5 text-[10px] rounded ${
+                  session.claudeStatus === 'thinking'
+                    ? 'bg-blue-500/20 text-blue-400 animate-pulse'
+                    : session.claudeStatus === 'waiting_for_input'
+                    ? 'bg-green-500/20 text-green-400'
+                    : session.claudeStatus === 'error'
+                    ? 'bg-red-500/20 text-red-400'
+                    : 'bg-gray-500/20 text-gray-400'
+                }`}>
+                  {session.claudeStatus === 'thinking' && 'Working...'}
+                  {session.claudeStatus === 'waiting_for_input' && 'Ready'}
+                  {session.claudeStatus === 'error' && 'Error'}
+                  {session.claudeStatus === 'idle' && 'Idle'}
+                </span>
+              )}
             </div>
+            {(() => {
+              // Different preview logic for Claude vs non-Claude sessions
+              const preview = session.isClaudeSession
+                ? (session.userLastInput || session.conversationSummary || session.lastOutput)
+                : (session.process.currentCommand || session.lastOutput);
+
+              if (!preview) return null;
+
+              return (
+                <div className="mt-1 text-xs text-gray-500 truncate font-mono" title={preview}>
+                  {session.isClaudeSession && session.userLastInput && (
+                    <span className="text-blue-400 mr-1">›</span>
+                  )}
+                  {!session.isClaudeSession && session.process.currentCommand && (
+                    <span className="text-green-400 mr-1">$</span>
+                  )}
+                  {preview}
+                </div>
+              );
+            })()}
           </div>
           {session.status === 'terminated' && (
             <span className="px-1.5 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded flex-shrink-0">

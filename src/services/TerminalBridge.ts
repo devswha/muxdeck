@@ -3,6 +3,7 @@ import { ClientChannel } from 'ssh2';
 import { BridgeState, BridgeConfig, TerminalBridgeInfo } from '../types/Terminal.js';
 import { sshConnectionManager } from './SSHConnectionManager.js';
 import { sessionDiscoveryService } from './SessionDiscoveryService.js';
+import { getHostConfig } from '../config/hosts.js';
 
 export interface TerminalBridge {
   id: string;
@@ -125,6 +126,21 @@ export class TerminalBridgeManager {
   }
 
   private async createRemoteBridge(bridge: TerminalBridge, hostId: string, tmuxTarget: string): Promise<void> {
+    const hostConfig = getHostConfig(hostId);
+    const hasJumpHost = hostConfig?.jumpHost !== undefined;
+
+    // Use native SSH shell if jump host is configured
+    if (hasJumpHost) {
+      try {
+        await this.createRemoteBridgeNative(bridge, hostId, tmuxTarget);
+        return;
+      } catch (err) {
+        console.warn('Native SSH shell failed, falling back to ssh2 shell:', err instanceof Error ? err.message : err);
+        // Fall through to ssh2 method
+      }
+    }
+
+    // Original ssh2 shell method
     const channel = await sshConnectionManager.shell(hostId);
     bridge.sshChannel = channel;
     bridge.state = 'connected';
@@ -160,6 +176,58 @@ export class TerminalBridgeManager {
 
     // Attach to tmux session
     channel.write(`tmux attach-session -t "${tmuxTarget}"\n`);
+
+    this.onStateChange?.(bridge.sessionId, 'connected');
+  }
+
+  private async createRemoteBridgeNative(bridge: TerminalBridge, hostId: string, tmuxTarget: string): Promise<void> {
+    const ptyProcess = await sshConnectionManager.shellNative(hostId);
+    bridge.ptyProcess = ptyProcess;
+    bridge.state = 'connected';
+
+    let connectionCheckDone = false;
+
+    // Wait for SSH connection to be established before sending tmux command
+    await new Promise<void>((resolve) => {
+      const disposable = ptyProcess.onData((data: string) => {
+        // Look for shell prompt or successful connection indicators
+        if (!connectionCheckDone && (data.includes('$') || data.includes('#') || data.includes('>'))) {
+          connectionCheckDone = true;
+          disposable.dispose();
+          resolve();
+        }
+      });
+
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        if (!connectionCheckDone) {
+          connectionCheckDone = true;
+          disposable.dispose();
+          resolve();
+        }
+      }, 5000);
+    });
+
+    // Now set up the main data handler
+    ptyProcess.onData((data: string) => {
+      bridge.lastActivityAt = new Date();
+
+      bridge.outputBuffer.push(data);
+      if (bridge.outputBuffer.length > BUFFER_MAX_LINES) {
+        bridge.outputBuffer.shift();
+      }
+
+      this.onOutput?.(bridge.sessionId, data);
+    });
+
+    ptyProcess.onExit(() => {
+      bridge.state = 'closed';
+      this.onStateChange?.(bridge.sessionId, 'closed');
+      this.bridges.delete(bridge.sessionId);
+    });
+
+    // Attach to tmux session
+    ptyProcess.write(`tmux attach-session -t "${tmuxTarget}"\n`);
 
     this.onStateChange?.(bridge.sessionId, 'connected');
   }

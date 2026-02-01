@@ -1,3 +1,10 @@
+export interface TodoItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+}
+
 export interface Todo {
   id: string;
   workspaceId: string;

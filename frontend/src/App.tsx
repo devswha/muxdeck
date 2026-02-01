@@ -11,11 +11,15 @@ import { groupSessionsByWorkspace } from './types/Project';
 import { getToken, isAuthenticated, checkAuthEnabled, logout } from './services/AuthService';
 import * as PersistenceService from './services/PersistenceService';
 import * as WorkspaceService from './services/WorkspaceService';
+import * as HostService from './services/HostService';
 import { NewWorkspaceDialog } from './components/NewWorkspaceDialog';
 import { WorkspaceGrid } from './components/WorkspaceGrid';
 import { SessionTile } from './components/SessionTile';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { HostManagement } from './components/HostManagement';
+import { BacklogButton } from './components/BacklogButton';
+import { BacklogPanel } from './components/BacklogPanel';
+import { TodoPanel } from './components/TodoPanel';
 
 function ConnectionStatus({ status }: { status: string }) {
   const statusConfig = {
@@ -76,6 +80,14 @@ function SessionManagerApp() {
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = useState<Set<string>>(new Set());
   const [expandedPreviews, setExpandedPreviews] = useState<Set<string>>(new Set());
   const [showHostManagement, setShowHostManagement] = useState(false);
+  const [showBacklog, setShowBacklog] = useState(false);
+  const [showHiddenWorkspaces, setShowHiddenWorkspaces] = useState(false);
+  const [showTodoPanel, setShowTodoPanel] = useState(false);
+  const [selectedWorkspaceForTodo, setSelectedWorkspaceForTodo] = useState<string | null>(null);
+
+  // Hosts and todo stats for workspace info
+  const [hosts, setHosts] = useState<Array<{ id: string; name: string; type: string; hostname?: string }>>([]);
+  const [todoStats] = useState<Record<string, { pending: number; completed: number }>>({});
 
   // Drag and drop state
   const {
@@ -126,10 +138,26 @@ function SessionManagerApp() {
     }
   }, []);
 
+  // Fetch hosts
+  const fetchHosts = useCallback(async () => {
+    try {
+      const data = await HostService.fetchHosts();
+      setHosts(data.map(h => ({
+        id: h.id,
+        name: h.name,
+        type: h.type,
+        hostname: h.hostname,
+      })));
+    } catch (error) {
+      console.error('Failed to fetch hosts:', error);
+    }
+  }, []);
+
   // Fetch workspaces on mount
   useEffect(() => {
     fetchWorkspaces();
-  }, [fetchWorkspaces]);
+    fetchHosts();
+  }, [fetchWorkspaces, fetchHosts]);
 
   const handleSelectSession = useCallback((session: Session) => {
     setSelectedSessionId(session.id);
@@ -201,9 +229,39 @@ function SessionManagerApp() {
     await fetchWorkspaces();
   }, [fetchWorkspaces]);
 
+  const handleRenameWorkspace = useCallback(async (workspaceId: string, newName: string) => {
+    await WorkspaceService.renameWorkspace(workspaceId, newName);
+    await fetchWorkspaces();
+  }, [fetchWorkspaces]);
+
+  const handleToggleHidden = useCallback(async (workspaceId: string) => {
+    const workspace = workspaces.find(w => w.id === workspaceId);
+    if (!workspace) return;
+
+    if (workspace.hidden) {
+      await WorkspaceService.showWorkspace(workspaceId);
+    } else {
+      await WorkspaceService.hideWorkspace(workspaceId);
+    }
+    await fetchWorkspaces();
+  }, [workspaces, fetchWorkspaces]);
+
   const handleAddSessionToWorkspace = useCallback((workspaceId: string) => {
     setSelectedWorkspaceId(workspaceId);
     setShowNewSessionDialog(true);
+  }, []);
+
+  const handleOpenTodo = useCallback((workspaceId: string, _workspaceName: string) => {
+    setSelectedWorkspaceForTodo(workspaceId);
+    setShowTodoPanel(true);
+  }, []);
+
+  const handleToggleTodoPanel = useCallback(() => {
+    setShowTodoPanel(prev => !prev);
+  }, []);
+
+  const handleSelectWorkspaceForTodo = useCallback((workspaceId: string) => {
+    setSelectedWorkspaceForTodo(workspaceId);
   }, []);
 
   const handleToggleCollapse = useCallback((workspaceId: string) => {
@@ -346,6 +404,18 @@ function SessionManagerApp() {
     return () => document.removeEventListener('dragend', handleDragEnd);
   }, [handleDragEnd]);
 
+  // Keyboard shortcut for backlog (Ctrl+B)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        setShowBacklog(prev => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const renderTerminal = useCallback((session: Session) => {
     return (
       <TerminalComponent
@@ -357,6 +427,12 @@ function SessionManagerApp() {
       />
     );
   }, [handleInput, handleResize, handleTerminalReady]);
+
+  // Filter workspaces based on hidden state
+  const visibleWorkspaces = groupSessionsByWorkspace(displaySessions, workspaces, collapsedWorkspaceIds)
+    .filter(workspace => showHiddenWorkspaces || !workspace.hidden);
+
+  const hiddenWorkspaceCount = workspaces.filter(w => w.hidden).length;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
@@ -391,6 +467,20 @@ function SessionManagerApp() {
             />
             <span className="text-sm text-gray-400">Show history</span>
           </label>
+          {hiddenWorkspaceCount > 0 && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showHiddenWorkspaces}
+                onChange={(e) => setShowHiddenWorkspaces(e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-400">
+                Show hidden ({hiddenWorkspaceCount})
+              </span>
+            </label>
+          )}
+          <BacklogButton onClick={() => setShowBacklog(true)} />
           <ConnectionStatus status={connectionStatus} />
           <button
             onClick={logout}
@@ -414,12 +504,18 @@ function SessionManagerApp() {
           </div>
         ) : (
           <WorkspaceGrid
-            workspaces={groupSessionsByWorkspace(displaySessions, workspaces, collapsedWorkspaceIds)}
+            workspaces={visibleWorkspaces}
             onToggleCollapse={handleToggleCollapse}
             onAddSession={handleAddSessionToWorkspace}
             onDeleteWorkspace={handleDeleteWorkspace}
+            onRenameWorkspace={handleRenameWorkspace}
+            onToggleHidden={handleToggleHidden}
             onSessionDrop={handleSessionDrop}
             dragOverWorkspaceId={dragOverWorkspaceId}
+            todoStats={todoStats}
+            hosts={hosts}
+            showHiddenWorkspaces={showHiddenWorkspaces}
+            onOpenTodo={handleOpenTodo}
             renderSession={(session) => (
               <SessionTile
                 key={session.id}
@@ -478,6 +574,20 @@ function SessionManagerApp() {
       <HostManagement
         isOpen={showHostManagement}
         onClose={() => setShowHostManagement(false)}
+      />
+
+      <BacklogPanel
+        isOpen={showBacklog}
+        onClose={() => setShowBacklog(false)}
+      />
+
+      <TodoPanel
+        isOpen={showTodoPanel}
+        onClose={() => setShowTodoPanel(false)}
+        onToggle={handleToggleTodoPanel}
+        workspaces={workspaces.map(w => ({ id: w.id, name: w.name }))}
+        selectedWorkspaceId={selectedWorkspaceForTodo}
+        onSelectWorkspace={handleSelectWorkspaceForTodo}
       />
     </div>
   );

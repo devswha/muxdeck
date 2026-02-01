@@ -82,20 +82,21 @@ export async function workspaceRoutes(app: FastifyInstance) {
         type: 'object',
         properties: {
           name: { type: 'string', maxLength: 50 },
-          description: { type: 'string' }
+          description: { type: 'string' },
+          hidden: { type: 'boolean' }
         }
       }
     }
   }, async (request, reply) => {
     try {
-      const { name, description } = request.body;
+      const { name, description, hidden } = request.body;
 
       if (name && name.length > 50) {
         reply.status(400);
         return { error: 'Name must be 50 characters or less' };
       }
 
-      const workspace = await workspaceStorage.update(request.params.id, { name, description });
+      const workspace = await workspaceStorage.update(request.params.id, { name, description, hidden });
 
       if (!workspace) {
         reply.status(404);
@@ -116,13 +117,13 @@ export async function workspaceRoutes(app: FastifyInstance) {
     try {
       const { id } = request.params;
 
-      // Get all sessions in this workspace and move them to Ungrouped
+      // Get all sessions in this workspace and set their workspaceId to null
       const sessionIds = sessionDiscoveryService.getSessionsInWorkspace(id);
       for (const sessionId of sessionIds) {
         sessionDiscoveryService.setSessionWorkspace(sessionId, null);
       }
 
-      // Now delete the workspace
+      // Delete the workspace
       const deleted = await workspaceStorage.delete(id);
 
       if (!deleted) {

@@ -5,6 +5,14 @@ export type SessionStatus =
   | 'disconnected'
   | 'terminated';
 
+/** Claude Code operation status for active Claude sessions */
+export type ClaudeOperationStatus =
+  | 'thinking'      // Claude is actively working (tool calls, generation)
+  | 'waiting_for_input'  // Claude is waiting for user prompt
+  | 'idle'          // Claude session exists but inactive
+  | 'error'         // Claude encountered an error
+  | 'unknown';      // Cannot determine status
+
 /** Host types for session location */
 export type HostType = 'local' | 'remote';
 
@@ -49,6 +57,16 @@ export interface Session {
   dimensions: Dimensions;
   workingDirectory: string | null;
   workspaceId: string | null;
+  /** Last line of terminal output for preview */
+  lastOutput?: string;
+  /** tmux status bar right side content */
+  statusBar?: string;
+  /** Claude conversation summary from project files */
+  conversationSummary?: string;
+  /** User's last input from terminal (for Claude sessions) */
+  userLastInput?: string;
+  /** Claude operation status (only for Claude sessions) */
+  claudeStatus?: ClaudeOperationStatus;
 }
 
 /** Session creation request */

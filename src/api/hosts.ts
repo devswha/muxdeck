@@ -20,7 +20,13 @@ export async function hostRoutes(app: FastifyInstance) {
         name: h.name,
         type: 'ssh',
         hostname: h.hostname,
-        // connected status could be added later
+        port: h.port,
+        username: h.username,
+        privateKeyPath: h.privateKeyPath,
+        password: h.password,
+        useAgent: h.useAgent,
+        passphraseEnvVar: h.passphraseEnvVar,
+        jumpHost: h.jumpHost,
       })),
     ];
 
