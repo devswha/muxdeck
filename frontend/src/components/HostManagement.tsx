@@ -67,10 +67,34 @@ export function HostManagement({ isOpen, onClose }: HostManagementProps) {
     setTestResults(prev => ({ ...prev, [host.id]: { success: false, message: 'Testing...' } }));
 
     try {
+      // Build the full SSHHostConfig that the backend expects
+      const hostConfig: Record<string, unknown> = {
+        hostname: host.hostname,
+        port: host.port,
+        username: host.username,
+      };
+
+      // Add optional fields if they exist
+      if (host.privateKeyPath) {
+        hostConfig.privateKeyPath = host.privateKeyPath;
+      }
+      if (host.password) {
+        hostConfig.password = host.password;
+      }
+      if (host.useAgent) {
+        hostConfig.useAgent = host.useAgent;
+      }
+      if (host.passphraseEnvVar) {
+        hostConfig.passphraseEnvVar = host.passphraseEnvVar;
+      }
+      if (host.jumpHost) {
+        hostConfig.jumpHost = host.jumpHost;
+      }
+
       const response = await fetch('/api/hosts/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hostId: host.id }),
+        body: JSON.stringify(hostConfig),
       });
 
       const data = await response.json();
@@ -78,8 +102,8 @@ export function HostManagement({ isOpen, onClose }: HostManagementProps) {
       setTestResults(prev => ({
         ...prev,
         [host.id]: {
-          success: response.ok,
-          message: data.message || (response.ok ? 'Connection successful' : 'Connection failed'),
+          success: data.success === true,
+          message: data.error || data.message || (data.success ? 'Connection successful' : 'Connection failed'),
         },
       }));
     } catch (err) {
@@ -165,72 +189,60 @@ export function HostManagement({ isOpen, onClose }: HostManagementProps) {
                   return (
                     <div
                       key={host.id}
-                      className="bg-gray-900 border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
+                      className="bg-gray-900 border border-gray-700 rounded-lg p-3 hover:border-gray-600 transition-colors"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-medium">{host.name}</h3>
-                            {isLocal && (
-                              <span className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">
-                                Local
-                              </span>
-                            )}
-                            {host.connected && (
-                              <span className="flex items-center gap-1 text-green-400 text-sm">
-                                <div className="w-2 h-2 rounded-full bg-green-400" />
-                                Connected
-                              </span>
-                            )}
-                          </div>
-
-                          {!isLocal && (
-                            <div className="text-sm text-gray-400 space-y-1">
-                              <div>
-                                <span className="text-gray-500">Host:</span> {host.username}@{host.hostname}:{host.port}
-                              </div>
-                              <div>
-                                <span className="text-gray-500">Key:</span> {host.privateKeyPath}
-                              </div>
-                              {host.useAgent && (
-                                <div>
-                                  <span className="text-gray-500">Auth:</span> SSH Agent
-                                </div>
-                              )}
-                              {host.jumpHost && (
-                                <div>
-                                  <span className="text-gray-500">Jump Host:</span>{' '}
-                                  {host.jumpHost.username}@{host.jumpHost.hostname}:{host.jumpHost.port}
-                                </div>
-                              )}
-                            </div>
+                      <div className="flex items-center justify-between gap-4">
+                        {/* Left: Name, IP, Status in one line */}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <h3 className="font-medium truncate">{host.name}</h3>
+                          {isLocal ? (
+                            <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded shrink-0">
+                              Local
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400 shrink-0">
+                              {host.hostname}:{host.port}
+                            </span>
                           )}
-
-                          {testResult && (
-                            <div className={`mt-2 text-sm ${testResult.success ? 'text-green-400' : 'text-red-400'}`}>
-                              {testResult.message}
-                            </div>
+                          {/* Connection status indicator */}
+                          {!isLocal && (
+                            <span className={`flex items-center gap-1 text-xs shrink-0 ${
+                              testResult
+                                ? (testResult.success ? 'text-green-400' : 'text-red-400')
+                                : (host.connected ? 'text-green-400' : 'text-gray-500')
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full ${
+                                testResult
+                                  ? (testResult.success ? 'bg-green-400' : 'bg-red-400')
+                                  : (host.connected ? 'bg-green-400' : 'bg-gray-500')
+                              }`} />
+                              {testResult
+                                ? (testResult.success ? 'OK' : 'Failed')
+                                : (host.connected ? 'Connected' : 'Unknown')
+                              }
+                            </span>
                           )}
                         </div>
 
+                        {/* Right: Action buttons */}
                         {!isLocal && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0">
                             <button
                               onClick={() => handleTestConnection(host)}
                               disabled={testingHostId === host.id}
-                              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-md transition-colors disabled:opacity-50"
+                              className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-md transition-colors disabled:opacity-50"
                             >
                               {testingHostId === host.id ? 'Testing...' : 'Test'}
                             </button>
                             <button
                               onClick={() => setEditingHost(host)}
-                              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-md transition-colors"
+                              className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-md transition-colors"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => setDeletingHost(host)}
-                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors"
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors"
                             >
                               Delete
                             </button>

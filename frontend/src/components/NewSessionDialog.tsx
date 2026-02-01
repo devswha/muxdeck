@@ -12,6 +12,7 @@ interface Host {
 interface AvailableSession {
   sessionName: string;
   sessionId: string;
+  isHidden?: boolean;
 }
 
 interface NewSessionDialogProps {
@@ -47,6 +48,8 @@ export function NewSessionDialog({
   const [error, setError] = useState<string | null>(null);
   const [hosts, setHosts] = useState<Host[]>([{ id: 'local', name: 'Local', type: 'local', connected: true }]);
   const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>([]);
+  const [fetchingSessionsLoading, setFetchingSessionsLoading] = useState(false);
+  const [hostConnectionError, setHostConnectionError] = useState<string | null>(null);
 
   // Sync workspace selection when dialog reopens with different defaultWorkspaceId
   useEffect(() => {
@@ -83,8 +86,20 @@ export function NewSessionDialog({
     if (!isOpen || mode !== 'attach') return;
 
     // Fetch available sessions for the selected host
+    setFetchingSessionsLoading(true);
+    setHostConnectionError(null);
+    setAvailableSessions([]);
+    setSelectedSessionName('');
+
     fetch(`/api/sessions/available?hostId=${selectedHostId}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(data => {
+            throw new Error(data.error || `Failed to connect to host (${res.status})`);
+          });
+        }
+        return res.json();
+      })
       .then(data => {
         if (data.sessions) {
           setAvailableSessions(data.sessions);
@@ -92,11 +107,20 @@ export function NewSessionDialog({
             setSelectedSessionName(data.sessions[0].sessionName);
           }
         }
+        setHostConnectionError(null);
       })
-      .catch(() => {
+      .catch((err) => {
         setAvailableSessions([]);
+        const selectedHost = hosts.find(h => h.id === selectedHostId);
+        const hostName = selectedHost?.name || selectedHostId;
+        setHostConnectionError(
+          err.message || `Failed to connect to ${hostName}. Please check if the host is reachable.`
+        );
+      })
+      .finally(() => {
+        setFetchingSessionsLoading(false);
       });
-  }, [isOpen, mode, selectedHostId]);
+  }, [isOpen, mode, selectedHostId, hosts]);
 
   if (!isOpen) return null;
 
@@ -198,7 +222,7 @@ export function NewSessionDialog({
               onChange={(e) => setSelectedWorkspaceId(e.target.value || null)}
               className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-white focus:outline-none focus:border-blue-500"
             >
-              <option value="">No workspace (Ungrouped)</option>
+              <option value="">No workspace</option>
               {workspaces.map((ws) => (
                 <option key={ws.id} value={ws.id}>{ws.name}</option>
               ))}
@@ -246,7 +270,19 @@ export function NewSessionDialog({
                 <label className="block text-sm font-medium text-gray-300 mb-1">
                   Select Session *
                 </label>
-                {availableSessions.length > 0 ? (
+                {fetchingSessionsLoading ? (
+                  <div className="px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Connecting to host...
+                  </div>
+                ) : hostConnectionError ? (
+                  <div className="px-3 py-2 bg-red-900/30 border border-red-700 rounded-md text-red-300 text-sm">
+                    {hostConnectionError}
+                  </div>
+                ) : availableSessions.length > 0 ? (
                   <select
                     value={selectedSessionName}
                     onChange={(e) => setSelectedSessionName(e.target.value)}
@@ -255,13 +291,13 @@ export function NewSessionDialog({
                   >
                     {availableSessions.map(session => (
                       <option key={session.sessionId} value={session.sessionName}>
-                        {session.sessionName}
+                        {session.sessionName}{session.isHidden ? ' (hidden)' : ''}
                       </option>
                     ))}
                   </select>
                 ) : (
                   <div className="px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-500">
-                    No sessions available
+                    No sessions available on this host
                   </div>
                 )}
               </div>
@@ -287,7 +323,8 @@ export function NewSessionDialog({
               type="submit"
               disabled={
                 loading ||
-                (mode === 'create' ? !workingDirectory : !selectedSessionName)
+                fetchingSessionsLoading ||
+                (mode === 'create' ? !workingDirectory : (!selectedSessionName || !!hostConnectionError))
               }
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50"
             >
