@@ -6,3 +6,12 @@ dist/
 
 # MCP Memory (project-local)
 .mcp-memory/
+
+# OMC state and sessions
+.omc/
+
+# Claude local settings
+.claude/
+
+# Playwright MCP screenshots
+.playwright-mcp/
