@@ -1,12 +1,22 @@
 {
   "hosts": [
     {
-      "id": "test-server",
-      "name": "Test Server",
-      "hostname": "100.123.228.51",
+      "id": "company-mac",
+      "name": "company-mac",
+      "hostname": "100.99.147.87",
       "port": 22,
-      "username": "devswha",
-      "privateKeyPath": "~/.ssh/id_rsa"
+      "username": "calvin",
+      "useAgent": true,
+      "password": "devswha1!"
+    },
+    {
+      "id": "company-desktop",
+      "name": "company-desktop",
+      "hostname": "100.90.162.17",
+      "port": 22,
+      "username": "calvin",
+      "privateKeyPath": "~/.ssh/id_rsa",
+      "password": "devswha1!"
     }
   ]
 }

@@ -520,10 +520,10 @@ export class SessionDiscoveryService {
     try {
       // Execute tmux list-sessions on remote
       const sessionFormat = `#{session_id}${DELIMITER}#{session_name}${DELIMITER}#{session_windows}${DELIMITER}#{session_created}`;
-      const sessionsOutput = await sshConnectionManager.exec(
-        host.id,
-        `tmux list-sessions -F '${sessionFormat}' 2>/dev/null || true`
-      );
+      const cmd = `tmux list-sessions -F '${sessionFormat}' 2>/dev/null || true`;
+      console.log(`[Discovery] Executing on ${host.id}: ${cmd}`);
+      const sessionsOutput = await sshConnectionManager.exec(host.id, cmd);
+      console.log(`[Discovery] ${host.id} output: "${sessionsOutput.trim()}"`);
 
       if (!sessionsOutput.trim()) {
         return [];
@@ -737,7 +737,14 @@ export class SessionDiscoveryService {
     for (const result of remoteDiscoveries) {
       if (result.status === 'fulfilled') {
         remoteSessions.push(...result.value);
+      } else {
+        console.error('Remote discovery failed:', result.reason);
       }
+    }
+
+    console.log(`Discovered: ${localSessions.length} local, ${remoteSessions.length} remote`);
+    if (remoteSessions.length > 0) {
+      console.log('Remote sessions:', remoteSessions.map(s => `${s.host.id}:${s.name}`).join(', '));
     }
 
     const allDiscovered = [...localSessions, ...remoteSessions];

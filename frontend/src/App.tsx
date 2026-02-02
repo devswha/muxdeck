@@ -63,7 +63,7 @@ function SessionManagerApp() {
   const [subscribedSessions, setSubscribedSessions] = useState<Set<string>>(new Set());
   const subscribedSessionsRef = useRef(subscribedSessions);
   subscribedSessionsRef.current = subscribedSessions;
-  const [showAllSessions, setShowAllSessions] = useState(false);
+  const [showAllSessions, setShowAllSessions] = useState(true);
   const [showNewSessionDialog, setShowNewSessionDialog] = useState(false);
   const [newSessionDefaults, setNewSessionDefaults] = useState<{
     workingDirectory?: string;

@@ -79,4 +79,10 @@ export interface ErrorMessage {
   code?: string;
 }
 
-export type ServerMessage = SessionsMessage | OutputMessage | BufferMessage | ErrorMessage | { type: string };
+export interface ClaudeStatusMessage {
+  type: 'claude-status';
+  sessionId: string;
+  status: ClaudeOperationStatus;
+}
+
+export type ServerMessage = SessionsMessage | OutputMessage | BufferMessage | ErrorMessage | ClaudeStatusMessage | { type: string };

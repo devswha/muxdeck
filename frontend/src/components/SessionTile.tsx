@@ -83,6 +83,13 @@ export function SessionTile({
     onDragStart?.();
   };
 
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (session.status !== 'terminated' && onViewTerminal) {
+      onViewTerminal(session);
+    }
+  };
+
   return (
     <div
       draggable={session.status !== 'terminated'}
@@ -96,6 +103,7 @@ export function SessionTile({
         ${isDragging ? 'opacity-40 cursor-grabbing' : 'cursor-grab'}
       `}
       onClick={() => onSelect(session)}
+      onDoubleClick={handleDoubleClick}
     >
       <div className="flex items-center justify-between px-3 py-2 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-2 min-w-0 flex-1">

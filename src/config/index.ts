@@ -34,7 +34,7 @@ export interface AppConfig {
 
 const DEFAULT_CONFIG: AppConfig = {
   server: {
-    port: 3000,
+    port: 3006,
     host: '0.0.0.0',
   },
   websocket: {

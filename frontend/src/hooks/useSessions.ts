@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Session } from '../types/Session';
+import { Session, ClaudeOperationStatus } from '../types/Session';
 import * as PersistenceService from '../services/PersistenceService';
 
 export function useSessions() {
@@ -39,6 +39,12 @@ export function useSessions() {
 
   const updateSession = useCallback((session: Session) => {
     setSessions(prev => prev.map(s => s.id === session.id ? session : s));
+  }, []);
+
+  const updateClaudeStatus = useCallback((sessionId: string, status: ClaudeOperationStatus) => {
+    setSessions(prev => prev.map(s =>
+      s.id === sessionId ? { ...s, claudeStatus: status } : s
+    ));
   }, []);
 
   const getClaudeSessions = useCallback(() => {
@@ -86,6 +92,7 @@ export function useSessions() {
     addSession,
     removeSession,
     updateSession,
+    updateClaudeStatus,
     getClaudeSessions,
     setLoading: setLoadingState,
     setError: setErrorState,

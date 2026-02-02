@@ -43,6 +43,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     updateSessions,
     setError,
     getClaudeSessions,
+    updateClaudeStatus,
     showHistory,
     setShowHistory,
     toggleFavorite,
@@ -86,8 +87,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           setError(message.message);
         }
         break;
+
+      case 'claude-status':
+        if ('sessionId' in message && 'status' in message) {
+          updateClaudeStatus(message.sessionId, message.status);
+        }
+        break;
     }
-  }, [updateSessions, setError]);
+  }, [updateSessions, setError, updateClaudeStatus]);
 
   // Determine WebSocket URL
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -96,7 +103,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const isDev = import.meta.env.DEV;
 
   const wsHost = isDev && !isLocalhost
-    ? `${hostname}:3000`
+    ? `${hostname}:3006`
     : window.location.host;
   const wsUrl = `${wsProtocol}//${wsHost}/ws`;
 

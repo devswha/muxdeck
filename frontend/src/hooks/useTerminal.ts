@@ -3,6 +3,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
+import { ClipboardAddon } from '@xterm/addon-clipboard';
 import '@xterm/xterm/css/xterm.css';
 
 interface UseTerminalOptions {
@@ -30,7 +31,11 @@ export function useTerminal({ onData, onResize }: UseTerminalOptions = {}) {
     const terminal = new Terminal({
       cursorBlink: true,
       fontSize: 14,
-      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Menlo, Monaco, Consolas, monospace',
+      fontWeight: '400',
+      fontWeightBold: '600',
+      letterSpacing: 0,
+      lineHeight: 1.0,
       theme: {
         background: '#1e1e1e',
         foreground: '#d4d4d4',
@@ -60,6 +65,7 @@ export function useTerminal({ onData, onResize }: UseTerminalOptions = {}) {
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.loadAddon(new Unicode11Addon());
+    terminal.loadAddon(new ClipboardAddon());
 
     terminal.open(container);
 
@@ -71,10 +77,13 @@ export function useTerminal({ onData, onResize }: UseTerminalOptions = {}) {
     }
 
     // Delay fit() to ensure container has dimensions
+    // Use multiple frames to handle flex layout calculation
     requestAnimationFrame(() => {
-      if (container.offsetWidth > 0 && container.offsetHeight > 0) {
-        fitAddon.fit();
-      }
+      requestAnimationFrame(() => {
+        if (container.offsetWidth > 0 && container.offsetHeight > 0) {
+          fitAddon.fit();
+        }
+      });
     });
 
     // Handle user input
@@ -92,11 +101,56 @@ export function useTerminal({ onData, onResize }: UseTerminalOptions = {}) {
     });
     resizeObserver.observe(container);
 
+    // Auto-copy on selection (drag to copy)
+    const handleMouseUp = () => {
+      const selection = terminal.getSelection();
+      if (selection && selection.length > 0) {
+        navigator.clipboard.writeText(selection).catch((err) => {
+          console.warn('Failed to copy to clipboard:', err);
+        });
+      }
+    };
+    container.addEventListener('mouseup', handleMouseUp);
+
+    // Ctrl+V / Cmd+V to paste
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      // Ctrl+V or Cmd+V for paste
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            onDataRef.current?.(text);
+          }
+        } catch (err) {
+          console.warn('Failed to paste from clipboard:', err);
+        }
+      }
+    };
+    container.addEventListener('keydown', handleKeyDown);
+
+    // Right-click to paste
+    const handleContextMenu = async (e: MouseEvent) => {
+      e.preventDefault();
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          onDataRef.current?.(text);
+        }
+      } catch (err) {
+        console.warn('Failed to paste from clipboard:', err);
+      }
+    };
+    container.addEventListener('contextmenu', handleContextMenu);
+
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
     containerRef.current = container;
 
     return () => {
+      container.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('keydown', handleKeyDown);
+      container.removeEventListener('contextmenu', handleContextMenu);
       resizeObserver.disconnect();
       terminal.dispose();
       terminalRef.current = null;

@@ -59,7 +59,12 @@ export const TerminalComponent = memo(function Terminal({
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
-        fit();
+        // Delay fit to ensure container layout is complete
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            fit();
+          });
+        });
       }
     });
 

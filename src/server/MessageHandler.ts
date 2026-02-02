@@ -23,6 +23,15 @@ export class MessageHandler {
         sessions,
       });
     });
+
+    // Set up Claude status change handler for real-time updates
+    terminalBridgeManager.setClaudeStatusChangeHandler((sessionId, status) => {
+      this.broadcastToSubscribers(sessionId, {
+        type: 'claude-status',
+        sessionId,
+        status,
+      });
+    });
   }
 
   handleConnection(ws: WebSocket, clientId: string): void {

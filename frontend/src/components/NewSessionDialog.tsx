@@ -234,14 +234,13 @@ export function NewSessionDialog({
               {/* Create Mode Fields */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Working Directory *
+                  Working Directory
                 </label>
                 <input
                   type="text"
                   value={workingDirectory}
                   onChange={(e) => setWorkingDirectory(e.target.value)}
-                  placeholder="/path/to/project"
-                  required
+                  placeholder="~ (home directory)"
                   className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -324,7 +323,7 @@ export function NewSessionDialog({
               disabled={
                 loading ||
                 fetchingSessionsLoading ||
-                (mode === 'create' ? !workingDirectory : (!selectedSessionName || !!hostConnectionError))
+                (mode === 'create' ? false : (!selectedSessionName || !!hostConnectionError))
               }
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50"
             >

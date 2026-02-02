@@ -4,6 +4,8 @@ import { BridgeState, BridgeConfig, TerminalBridgeInfo } from '../types/Terminal
 import { sshConnectionManager } from './SSHConnectionManager.js';
 import { sessionDiscoveryService } from './SessionDiscoveryService.js';
 import { getHostConfig } from '../config/hosts.js';
+import { ClaudeStatusDetector } from '../utils/ClaudeStatusDetector.js';
+import { ClaudeOperationStatus } from '../types/Session.js';
 
 export interface TerminalBridge {
   id: string;
@@ -18,10 +20,12 @@ export interface TerminalBridge {
   outputBuffer: string[];
   graceTimeout: NodeJS.Timeout | null;
   isRemote: boolean;
+  statusDetector: ClaudeStatusDetector | null;
 }
 
 type OutputCallback = (sessionId: string, data: string) => void;
 type StateCallback = (sessionId: string, state: BridgeState, error?: string) => void;
+type ClaudeStatusCallback = (sessionId: string, status: ClaudeOperationStatus) => void;
 
 const BUFFER_MAX_LINES = 1000;
 const GRACE_PERIOD_MS = 30000;
@@ -30,6 +34,7 @@ export class TerminalBridgeManager {
   private bridges: Map<string, TerminalBridge> = new Map();
   private onOutput: OutputCallback | null = null;
   private onStateChange: StateCallback | null = null;
+  private onClaudeStatusChange: ClaudeStatusCallback | null = null;
 
   setOutputHandler(handler: OutputCallback): void {
     this.onOutput = handler;
@@ -37,6 +42,10 @@ export class TerminalBridgeManager {
 
   setStateChangeHandler(handler: StateCallback): void {
     this.onStateChange = handler;
+  }
+
+  setClaudeStatusChangeHandler(handler: ClaudeStatusCallback): void {
+    this.onClaudeStatusChange = handler;
   }
 
   async subscribe(config: BridgeConfig, clientId: string): Promise<TerminalBridgeInfo> {
@@ -74,9 +83,15 @@ export class TerminalBridgeManager {
       outputBuffer: [],
       graceTimeout: null,
       isRemote,
+      statusDetector: null,
     };
 
     this.bridges.set(config.sessionId, bridge);
+
+    // Create status detector for Claude sessions
+    if (session?.isClaudeSession) {
+      bridge.statusDetector = new ClaudeStatusDetector();
+    }
 
     try {
       if (isRemote && session) {
@@ -114,6 +129,14 @@ export class TerminalBridgeManager {
       }
 
       this.onOutput?.(bridge.sessionId, data);
+
+      // Detect Claude status changes
+      if (bridge.statusDetector) {
+        const newStatus = bridge.statusDetector.processOutput(data);
+        if (newStatus) {
+          this.onClaudeStatusChange?.(bridge.sessionId, newStatus);
+        }
+      }
     });
 
     ptyProcess.onExit(() => {
@@ -155,6 +178,14 @@ export class TerminalBridgeManager {
       }
 
       this.onOutput?.(bridge.sessionId, str);
+
+      // Detect Claude status changes
+      if (bridge.statusDetector) {
+        const newStatus = bridge.statusDetector.processOutput(str);
+        if (newStatus) {
+          this.onClaudeStatusChange?.(bridge.sessionId, newStatus);
+        }
+      }
     });
 
     channel.stderr.on('data', (data: Buffer) => {
@@ -218,6 +249,14 @@ export class TerminalBridgeManager {
       }
 
       this.onOutput?.(bridge.sessionId, data);
+
+      // Detect Claude status changes
+      if (bridge.statusDetector) {
+        const newStatus = bridge.statusDetector.processOutput(data);
+        if (newStatus) {
+          this.onClaudeStatusChange?.(bridge.sessionId, newStatus);
+        }
+      }
     });
 
     ptyProcess.onExit(() => {

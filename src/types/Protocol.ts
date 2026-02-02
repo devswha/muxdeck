@@ -1,4 +1,4 @@
-import { Session } from './Session.js';
+import { Session, ClaudeOperationStatus } from './Session.js';
 
 // Client -> Server messages
 export interface SubscribeMessage {
@@ -68,6 +68,12 @@ export interface SessionUpdatedMessage {
   session: Session;
 }
 
+export interface ClaudeStatusMessage {
+  type: 'claude-status';
+  sessionId: string;
+  status: ClaudeOperationStatus;
+}
+
 export interface ErrorMessage {
   type: 'error';
   message: string;
@@ -90,6 +96,7 @@ export type ServerMessage =
   | SessionAddedMessage
   | SessionRemovedMessage
   | SessionUpdatedMessage
+  | ClaudeStatusMessage
   | ErrorMessage
   | AuthExpiredMessage
   | BufferMessage;
